@@ -1,0 +1,24 @@
+import SwiftUI
+
+struct LaunchScreenView: View {
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                Text("RUNBOY")
+                    .font(.system(size: 40, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+                    .tracking(3)
+
+                Text("Endless Runner")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.gray)
+            }
+        }
+    }
+}
+
+#Preview {
+    LaunchScreenView()
+}
