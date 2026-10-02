@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document Type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="21701" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorAccess="combined" initialViewController="01J-lp-oVM">
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21679"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <scene sceneID="EHf-IW-A2E">
+            <objects>
+                <viewController id="01J-lp-oVM" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
+                        <rect key="frame" x="0.0" y="0.0" width="390" height="844"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="fX3-yE-8sX">
+                                <rect key="frame" x="0.0" y="0.0" width="390" height="844"/>
+                                <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                            </view>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="RUNBOY" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nvj-jV-8cP">
+                                <rect key="frame" x="20" y="330" width="350" height="60"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="48" weight="heavy"/>
+                                <color key="textColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Endless Runner" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="7cN-1H-vXq">
+                                <rect key="frame" x="20" y="400" width="350" height="24"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="20" weight="semibold"/>
+                                <color key="textColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="calibratedRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="Bcu-3y-fBC"/>
+                        <constraints>
+                            <constraint firstItem="fX3-yE-8sX" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" id="EZ1-D7-aVk"/>
+                            <constraint firstItem="fX3-yE-8sX" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" id="Lgd-fX-A0B"/>
+                            <constraint firstItem="fX3-yE-8sX" firstAttribute="trailing" secondItem="Ze5-6b-2t3" secondAttribute="trailing" id="Tze-XP-fNe"/>
+                            <constraint firstItem="fX3-yE-8sX" firstAttribute="bottom" secondItem="Ze5-6b-2t3" secondAttribute="bottom" id="pRm-3J-RTV"/>
+                            <constraint firstItem="nvj-jV-8cP" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="MBh-Ew-7gP"/>
+                            <constraint firstItem="nvj-jV-8cP" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-100" id="Cmu-Uj-rqM"/>
+                            <constraint firstItem="nvj-jV-8cP" firstAttribute="leading" secondItem="Bcu-3y-fBC" secondAttribute="leading" constant="20" id="1X2-Nx-OJE"/>
+                            <constraint firstItem="nvj-jV-8cP" firstAttribute="trailing" secondItem="Bcu-3y-fBC" secondAttribute="trailing" constant="-20" id="KVS-Ve-A3P"/>
+                            <constraint firstItem="7cN-1H-vXq" firstAttribute="top" secondItem="nvj-jV-8cP" secondAttribute="bottom" constant="10" id="r0g-5f-BPE"/>
+                            <constraint firstItem="7cN-1H-vXq" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="zOq-yC-rQr"/>
+                            <constraint firstItem="7cN-1H-vXq" firstAttribute="leading" secondItem="Bcu-3y-fBC" secondAttribute="leading" constant="20" id="eBU-Ej-H6e"/>
+                            <constraint firstItem="7cN-1H-vXq" firstAttribute="trailing" secondItem="Bcu-3y-fBC" secondAttribute="trailing" constant="-20" id="qnO-6M-M3D"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="53" y="375"/>
+        </scene>
+    </scenes>
+</Document>
