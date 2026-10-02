@@ -1,0 +1,11 @@
+{
+    "method": "automatic",
+    "signingStyle": "automatic",
+    "stripSwiftSymbols": true,
+    "teamID": "",
+    "stripXCTestSymbols": true,
+    "bundleIdentifier": "com.yourname.runboy",
+    "uploadBitcode": false,
+    "destination": "export",
+    "signingCertificate": "Apple Distribution"
+}
