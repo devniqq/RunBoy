@@ -1,40 +1,56 @@
 import SpriteKit
 
+enum GamePhase {
+    case menu
+    case playing
+    case paused
+    case gameOver
+}
+
 final class GameScene: SKScene {
     private let lanePositions: [CGFloat] = [-120, 0, 120]
     private let obstacleColors: [UIColor] = [.systemRed, .systemOrange, .systemPurple]
 
     private let player: SKSpriteNode = {
         let node = SKSpriteNode(color: .systemBlue, size: CGSize(width: 42, height: 42))
-        node.zPosition = 10
+        node.zPosition = 20
+        node.name = "player"
         return node
     }()
 
     private let ground: SKSpriteNode = {
-        let node = SKSpriteNode(color: .darkGray, size: CGSize(width: 1000, height: 60))
+        let node = SKSpriteNode(color: .darkGray, size: CGSize(width: 1000, height: 70))
         node.zPosition = 4
         return node
     }()
 
     private let scoreLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
     private let highScoreLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
-    private let messageLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+    private let statusLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+    private let promptLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+    private let pauseButton = SKLabelNode(fontNamed: "AvenirNext-Bold")
 
     private var currentLane = 1
-    private var gameOver = false
-    private var isJumping = false
-    private var isSliding = false
+    private var phase: GamePhase = .menu
     private var score = 0
     private var lastUpdateTime: TimeInterval = 0
-    private var lastSpawnTime: TimeInterval = 0
-    private var lastCoinTime: TimeInterval = 0
-    private var scoreTimer: TimeInterval = 0
+    private var spawnTimer: TimeInterval = 0
+    private var coinTimer: TimeInterval = 0
+    private var cameraSpeed: CGFloat = 220
     private var touchStart: CGPoint?
+    private var isJumping = false
+    private var isSliding = false
+    private var slideTimeRemaining: TimeInterval = 0
+    private var playerBaseY: CGFloat = -165
+    private var verticalVelocity: CGFloat = 0
+    private let gravity: CGFloat = -1500
+    private let jumpForce: CGFloat = 620
 
     override init(size: CGSize) {
         super.init(size: size)
         backgroundColor = .black
         setupScene()
+        showMenu()
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -42,19 +58,35 @@ final class GameScene: SKScene {
     }
 
     private func setupScene() {
-        score = 0
-        currentLane = 1
-        gameOver = false
-        isJumping = false
-        isSliding = false
-
         removeAllChildren()
 
-        ground.position = CGPoint(x: 0, y: -330)
+        let background = SKShapeNode(rectOf: CGSize(width: size.width, height: size.height))
+        background.fillColor = .black
+        background.strokeColor = .clear
+        background.zPosition = -10
+        addChild(background)
+
+        let laneLine1 = SKShapeNode(rectOf: CGSize(width: 2, height: size.height))
+        laneLine1.fillColor = .white
+        laneLine1.strokeColor = .clear
+        laneLine1.position = CGPoint(x: -120, y: 0)
+        laneLine1.alpha = 0.15
+        laneLine1.zPosition = -5
+        addChild(laneLine1)
+
+        let laneLine2 = SKShapeNode(rectOf: CGSize(width: 2, height: size.height))
+        laneLine2.fillColor = .white
+        laneLine2.strokeColor = .clear
+        laneLine2.position = CGPoint(x: 120, y: 0)
+        laneLine2.alpha = 0.15
+        laneLine2.zPosition = -5
+        addChild(laneLine2)
+
+        ground.position = CGPoint(x: 0, y: -335)
         addChild(ground)
 
-        player.position = CGPoint(x: lanePositions[currentLane], y: -155)
-        player.name = "player"
+        player.position = CGPoint(x: lanePositions[currentLane], y: playerBaseY)
+        player.size = CGSize(width: 42, height: 42)
         addChild(player)
 
         scoreLabel.text = "Score: 0"
@@ -63,33 +95,98 @@ final class GameScene: SKScene {
         scoreLabel.fontColor = .white
         addChild(scoreLabel)
 
-        let best = UserDefaults.standard.integer(forKey: "RunBoyHighScore")
-        highScoreLabel.text = "Best: \(best)"
+        let bestScore = UserDefaults.standard.integer(forKey: "RunBoyHighScore")
+        highScoreLabel.text = "Best: \(bestScore)"
         highScoreLabel.fontSize = 22
-        highScoreLabel.position = CGPoint(x: 0, y: 220)
+        highScoreLabel.position = CGPoint(x: 0, y: 225)
         highScoreLabel.fontColor = .systemYellow
         addChild(highScoreLabel)
 
-        messageLabel.text = ""
-        messageLabel.fontSize = 40
-        messageLabel.position = CGPoint(x: 0, y: 50)
-        messageLabel.fontColor = .white
-        addChild(messageLabel)
+        statusLabel.text = ""
+        statusLabel.fontSize = 42
+        statusLabel.position = CGPoint(x: 0, y: 100)
+        statusLabel.fontColor = .white
+        addChild(statusLabel)
 
+        promptLabel.text = ""
+        promptLabel.fontSize = 18
+        promptLabel.position = CGPoint(x: 0, y: 45)
+        promptLabel.fontColor = .white
+        addChild(promptLabel)
+
+        pauseButton.text = "❚❚"
+        pauseButton.fontSize = 24
+        pauseButton.position = CGPoint(x: -150, y: 265)
+        pauseButton.fontColor = .white
+        addChild(pauseButton)
+
+        currentLane = 1
+        score = 0
         lastUpdateTime = 0
-        lastSpawnTime = 0
-        lastCoinTime = 0
-        scoreTimer = 0
+        spawnTimer = 0
+        coinTimer = 0
+        slideTimeRemaining = 0
+        isJumping = false
+        isSliding = false
+        verticalVelocity = 0
     }
 
-    override func didMove(to view: SKView) {
+    private func showMenu() {
+        phase = .menu
+        statusLabel.text = "RunBoy"
+        statusLabel.fontSize = 52
+        statusLabel.position = CGPoint(x: 0, y: 110)
+        promptLabel.text = "Tap to Start"
+        promptLabel.fontSize = 22
+        promptLabel.position = CGPoint(x: 0, y: 30)
+
+        let bestScore = UserDefaults.standard.integer(forKey: "RunBoyHighScore")
+        highScoreLabel.text = "Best: \(bestScore)"
+    }
+
+    private func startGame() {
         setupScene()
+        phase = .playing
+        statusLabel.text = ""
+        promptLabel.text = ""
+    }
+
+    private func togglePause() {
+        if phase == .playing {
+            phase = .paused
+            statusLabel.text = "Paused"
+            statusLabel.fontSize = 42
+            statusLabel.position = CGPoint(x: 0, y: 100)
+            promptLabel.text = "Tap again to Resume"
+            promptLabel.fontSize = 18
+            promptLabel.position = CGPoint(x: 0, y: 45)
+        } else if phase == .paused {
+            phase = .playing
+            statusLabel.text = ""
+            promptLabel.text = ""
+        }
+    }
+
+    private func endGame() {
+        guard phase == .playing else { return }
+        phase = .gameOver
+
+        let currentBest = UserDefaults.standard.integer(forKey: "RunBoyHighScore")
+        if score > currentBest {
+            UserDefaults.standard.set(score, forKey: "RunBoyHighScore")
+        }
+
+        highScoreLabel.text = "Best: \(UserDefaults.standard.integer(forKey: "RunBoyHighScore"))"
+        statusLabel.text = "Game Over"
+        statusLabel.fontSize = 42
+        statusLabel.position = CGPoint(x: 0, y: 100)
+        promptLabel.text = "Tap to Restart"
+        promptLabel.fontSize = 18
+        promptLabel.position = CGPoint(x: 0, y: 45)
     }
 
     override func update(_ currentTime: TimeInterval) {
-        if gameOver {
-            return
-        }
+        guard phase == .playing else { return }
 
         if lastUpdateTime == 0 {
             lastUpdateTime = currentTime
@@ -98,35 +195,105 @@ final class GameScene: SKScene {
         let delta = currentTime - lastUpdateTime
         lastUpdateTime = currentTime
 
-        scoreTimer += delta
-        if scoreTimer >= 0.12 {
-            score += 1
-            scoreLabel.text = "Score: \(score)"
-            scoreTimer = 0
+        updatePlayerPhysics(delta: delta)
+        updateSpawns(delta: delta)
+        updateWorld(delta: delta)
+        updateScore(delta: delta)
+    }
+
+    private func updatePlayerPhysics(delta: TimeInterval) {
+        if isJumping {
+            verticalVelocity += gravity * CGFloat(delta)
+            player.position.y += verticalVelocity * CGFloat(delta)
+
+            if player.position.y <= playerBaseY {
+                player.position.y = playerBaseY
+                verticalVelocity = 0
+                isJumping = false
+            }
         }
 
-        if currentTime - lastSpawnTime >= 1.1 {
+        if isSliding {
+            slideTimeRemaining -= delta
+            if slideTimeRemaining <= 0 {
+                player.size.height = 42
+                isSliding = false
+            }
+        }
+    }
+
+    private func updateSpawns(delta: TimeInterval) {
+        spawnTimer += delta
+        coinTimer += delta
+
+        let obstacleInterval = max(0.7, 1.2 - Double(score) * 0.008)
+        if spawnTimer >= obstacleInterval {
             spawnObstacle()
-            lastSpawnTime = currentTime
+            spawnTimer = 0
         }
 
-        if currentTime - lastCoinTime >= 0.8 {
+        let coinInterval = max(0.45, 0.85 - Double(score) * 0.004)
+        if coinTimer >= coinInterval {
             spawnCoin()
-            lastCoinTime = currentTime
+            coinTimer = 0
         }
+    }
+
+    private func updateWorld(delta: TimeInterval) {
+        cameraSpeed = 220 + CGFloat(min(score, 800)) * 0.8
+
+        for child in children {
+            if child.name == "obstacle" || child.name == "coin" {
+                child.position.y -= cameraSpeed * CGFloat(delta)
+
+                if child.position.y < -500 {
+                    child.removeFromParent()
+                    continue
+                }
+
+                if child.name == "obstacle" && child.intersects(player) {
+                    endGame()
+                }
+
+                if child.name == "coin" && child.intersects(player) {
+                    score += 10
+                    scoreLabel.text = "Score: \(score)"
+                    child.removeFromParent()
+                }
+            }
+        }
+    }
+
+    private func updateScore(delta: TimeInterval) {
+        _ = delta
+        score += 1
+        scoreLabel.text = "Score: \(score)"
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
-        touchStart = touch.location(in: self)
+        let location = touch.location(in: self)
 
-        if gameOver {
-            restartGame()
+        if phase == .menu {
+            startGame()
             return
         }
+
+        if phase == .gameOver {
+            startGame()
+            return
+        }
+
+        if location.x < frame.minX + 80 && location.y > frame.maxY - 160 {
+            togglePause()
+            return
+        }
+
+        touchStart = location
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard phase == .playing else { return }
         guard let touch = touches.first else { return }
         guard let start = touchStart else { return }
 
@@ -135,15 +302,17 @@ final class GameScene: SKScene {
         let dy = end.y - start.y
 
         if abs(dx) > abs(dy) {
-            if dx > 0 {
+            let threshold: CGFloat = 25
+            if dx > threshold {
                 moveLane(direction: 1)
-            } else {
+            } else if dx < -threshold {
                 moveLane(direction: -1)
             }
         } else {
-            if dy > 0 {
+            let threshold: CGFloat = 25
+            if dy > threshold {
                 jump()
-            } else {
+            } else if dy < -threshold {
                 slide()
             }
         }
@@ -159,27 +328,16 @@ final class GameScene: SKScene {
     }
 
     private func jump() {
-        guard !gameOver, !isJumping, !isSliding else { return }
+        guard !isJumping && !isSliding else { return }
         isJumping = true
-
-        let jumpUp = SKAction.moveBy(x: 0, y: 90, duration: 0.18)
-        let jumpDown = SKAction.moveBy(x: 0, y: -90, duration: 0.18)
-
-        player.run(SKAction.sequence([jumpUp, jumpDown])) { [weak self] in
-            self?.isJumping = false
-        }
+        verticalVelocity = jumpForce
     }
 
     private func slide() {
-        guard !gameOver, !isJumping, !isSliding else { return }
+        guard !isJumping && !isSliding else { return }
         isSliding = true
-
-        let shrink = SKAction.scaleY(to: 0.55, duration: 0.12)
-        let expand = SKAction.scaleY(to: 1.0, duration: 0.12)
-
-        player.run(SKAction.sequence([shrink, expand])) { [weak self] in
-            self?.isSliding = false
-        }
+        slideTimeRemaining = 0.6
+        player.size.height = 24
     }
 
     private func spawnObstacle() {
@@ -189,26 +347,10 @@ final class GameScene: SKScene {
         )
 
         let laneIndex = Int.random(in: 0..<3)
-        obstacle.position = CGPoint(x: lanePositions[laneIndex], y: 420)
+        obstacle.position = CGPoint(x: lanePositions[laneIndex], y: 440)
         obstacle.zPosition = 3
+        obstacle.name = "obstacle"
         addChild(obstacle)
-
-        let moveAction = SKAction.moveTo(y: -330, duration: 2.4)
-        obstacle.run(moveAction) { [weak self] in
-            obstacle.removeFromParent()
-        }
-
-        let collisionCheck = SKAction.sequence([
-            SKAction.wait(forDuration: 0.05),
-            SKAction.run { [weak self] in
-                guard let self, !self.gameOver else { return }
-                if obstacle.intersects(self.player) {
-                    self.endGame()
-                }
-            }
-        ])
-
-        obstacle.run(collisionCheck)
     }
 
     private func spawnCoin() {
@@ -216,54 +358,7 @@ final class GameScene: SKScene {
         let laneIndex = Int.random(in: 0..<3)
         coin.position = CGPoint(x: lanePositions[laneIndex], y: 420)
         coin.zPosition = 5
+        coin.name = "coin"
         addChild(coin)
-
-        let moveAction = SKAction.moveTo(y: -330, duration: 2.4)
-        coin.run(moveAction) { [weak self] in
-            coin.removeFromParent()
-        }
-
-        let coinCheck = SKAction.sequence([
-            SKAction.wait(forDuration: 0.05),
-            SKAction.run { [weak self] in
-                guard let self, !self.gameOver else { return }
-                if coin.intersects(self.player) {
-                    self.score += 10
-                    self.scoreLabel.text = "Score: \(self.score)"
-                    coin.removeFromParent()
-                }
-            }
-        ])
-
-        coin.run(coinCheck)
-    }
-
-    private func endGame() {
-        guard !gameOver else { return }
-        gameOver = true
-
-        let best = UserDefaults.standard.integer(forKey: "RunBoyHighScore")
-        if score > best {
-            UserDefaults.standard.set(score, forKey: "RunBoyHighScore")
-        }
-
-        let finalBest = UserDefaults.standard.integer(forKey: "RunBoyHighScore")
-        highScoreLabel.text = "Best: \(finalBest)"
-
-        messageLabel.text = "Game Over"
-        messageLabel.fontSize = 40
-        messageLabel.position = CGPoint(x: 0, y: 60)
-        addChild(messageLabel)
-
-        let restartLabel = SKLabelNode(fontNamed: "AvenirNext")
-        restartLabel.text = "Tap to Restart"
-        restartLabel.fontSize = 22
-        restartLabel.fontColor = .white
-        restartLabel.position = CGPoint(x: 0, y: 0)
-        addChild(restartLabel)
-    }
-
-    private func restartGame() {
-        setupScene()
     }
 }
